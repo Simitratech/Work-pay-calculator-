@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Pay & Per Diem Calculator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+        label {
+            margin-top: 10px;
+            display: block;
+            font-weight: bold;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results, .previous-results {
+            margin-top: 30px;
+        }
+        .result-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #e7f3e7;
+            border-radius: 5px;
+        }
+        .export-buttons {
+            margin-top: 10px;
+        }
+        .export-buttons button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Work Pay & Per Diem Calculator</h1>
+
+        <label for="start-time">Start Date & Time</label>
+        <input type="datetime-local" id="start-time">
+
+        <label for="end-time">End Date & Time</label>
+        <input type="datetime-local" id="end-time">
+
+        <label for="hourly-rate">Hourly Rate ($)</label>
+        <input type="number" id="hourly-rate" placeholder="Enter hourly rate">
+
+        <label for="per-diem-rate">Per Diem Rate ($/hour)</label>
+        <input type="number" id="per-diem-rate" placeholder="Enter per diem rate" value="6.35">
+
+        <button onclick="calculateAndSave()">Calculate</button>
+
+        <div class="results" id="results">
+            <h2>Results</h2>
+            <div class="result-item" id="work-hours"></div>
+            <div class="result-item" id="pay"></div>
+            <div class="result-item" id="per-diem"></div>
+            <div class="result-item" id="total"></div>
+
+            <div class="export-buttons">
+                <button onclick="exportToPDF()">Export as PDF</button>
+                <button onclick="exportToCSV()">Export as CSV</button>
+            </div>
+        </div>
+
+        <div class="previous-results">
+            <h2>Previous Results</h2>
+            <div id="previousResultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        function calculateAndSave() {
+            const startTime = new Date(document.getElementById('start-time').value);
+            const endTime = new Date(document.getElementById('end-time').value);
+            const hourlyRate = parseFloat(document.getElementById('hourly-rate').value);
+            const perDiemRate = parseFloat(document.getElementById('per-diem-rate').value);
+
+            if (isNaN(startTime) || isNaN(endTime) || isNaN(hourlyRate) || isNaN(perDiemRate)) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            const timeDifference = (endTime - startTime) / (1000 * 60 * 60); // in hours
+
+            if (timeDifference <= 0) {
+                alert('End time must be after start time.');
+                return;
+            }
+
+            const pay = timeDifference * hourlyRate;
+            const perDiem = timeDifference * perDiemRate;
+            const total = pay + perDiem;
+
+            // Display results
+            document.getElementById('work-hours').textContent = `Total Hours Worked: ${timeDifference.toFixed(2)} hours`;
+            document.getElementById('pay').textContent = `Total Pay: $${pay.toFixed(2)}`;
+            document.getElementById('per-diem').textContent = `Total Per Diem: $${perDiem.toFixed(2)}`;
+            document.getElementById('total').textContent = `Total Earnings (Pay + Per Diem): $${total.toFixed(2)}`;
+
+            // Save to local storage
+            const result = {
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                hoursWorked: timeDifference.toFixed(2),
+                pay: pay.toFixed(2),
+                perDiem: perDiem.toFixed(2),
+                total: total.toFixed(2)
+            };
+
+            let previousResults = JSON.parse(localStorage.getItem('previousResults')) || [];
+            previousResults.push(result);
+            localStorage.setItem('previousResults', JSON.stringify(previousResults));
+
+            displayPreviousResults();
+        }
+
+        function displayPreviousResults() {
+            const previousResults = JSON.parse(localStorage.getItem('previousResults')) || [];
+            const container = document.getElementById('previousResultsContainer');
+            container.innerHTML = '';
+
+            previousResults.forEach((result, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                resultDiv.innerHTML = `
+                    <strong>Result ${index + 1}:</strong><br>
+                    Start: ${new Date(result.startTime).toLocaleString()}<br>
+                    End: ${new Date(result.endTime).toLocaleString()}<br>
+                    Hours Worked: ${result.hoursWorked}<br>
+                    Pay: $${result.pay}<br>
+                    Per Diem: $${result.perDiem}<br>
+                    Total: $${result.total}
+                `;
+                container.appendChild(resultDiv);
+            });
+        }
+
+        function exportToPDF() {
+            alert('PDF export feature to be implemented!');
+        }
+
+        function exportToCSV() {
+            const previousResults = JSON.parse(localStorage.getItem('previousResults')) || [];
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Start Time,End Time,Hours Worked,Pay,Per Diem,Total\n";
+
+            previousResults.forEach(result => {
+                csvContent += `${result.startTime},${result.endTime},${result.hoursWorked},${result.pay},${result.perDiem},${result.total}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "work_pay_results.csv");
+            document.body.appendChild(link);
+
+            link.click();
+        }
+
+        // Display previously saved results when the page loads
+        window.onload = displayPreviousResults;
+    </script>
+</body>
+</html>
